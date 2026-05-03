@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ঘুষখোর রানার - মেগা ইনকাম</title>
+    <!-- AdMob SDK Placeholder -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --primary: #f1c40f;
+            --danger: #ff4757;
+            --bg: #050a14;
+        }
+        body {
+            margin: 0; padding: 0; background: #000;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden; height: 100vh;
+            touch-action: none; color: white;
+        }
+        #app-container {
+            position: relative; width: 100%; max-width: 500px; height: 100%;
+            margin: auto; background: var(--bg); overflow: hidden;
+            border-left: 1px solid #222; border-right: 1px solid #222;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        
+        /* UI Elements */
+        #top-bar {
+            position: absolute; top: env(safe-area-inset-top, 10px); left: 15px; right: 15px;
+            display: flex; flex-direction: column; gap: 8px; z-index: 10;
+        }
+        .stat-row { display: flex; justify-content: space-between; align-items: center; }
+        .stat-box {
+            background: rgba(0, 0, 0, 0.8); padding: 6px 15px;
+            border-radius: 20px; border: 1px solid var(--primary);
+            color: white; font-size: 14px; font-weight: 800;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        #dist-ui {
+            position: absolute; top: 110px; width: 100%; text-align: center;
+            font-size: 32px; font-weight: 900; color: #fff; text-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+            z-index: 5; pointer-events: none;
+        }
+
+        /* Overlays */
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 10, 20, 0.98); display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; text-align: center; padding: 20px; box-sizing: border-box;
+        }
+
+        .btn {
+            background: var(--primary); color: #000; border: none;
+            padding: 16px 40px; font-size: 20px; border-radius: 50px;
+            font-weight: 900; cursor: pointer; margin: 10px; width: 240px;
+            transition: 0.2s; box-shadow: 0 5px 15px rgba(241, 196, 15, 0.3);
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-sec { background: #2f3542; color: white; }
+        .btn-earn { background: #2ecc71; color: white; }
+
+        /* Hero Shop List */
+        #shop-list {
+            width: 100%; max-height: 45vh; overflow-y: auto; margin: 20px 0;
+            scrollbar-width: none;
+        }
+        .shop-card {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px; border-radius: 15px; margin-bottom: 12px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .shop-card.active { border-color: var(--primary); background: rgba(241, 196, 15, 0.1); }
+
+        /* Ads */
+        #banner-placeholder {
+            position: absolute; bottom: 0; width: 100%; height: 50px;
+            background: #111; border-top: 1px solid #333;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; color: #444; letter-spacing: 2px;
+        }
+
+        /* Controller */
+        #controls {
+            position: absolute; bottom: 70px; width: 100%;
+            display: flex; justify-content: space-between; padding: 0 40px;
+            box-sizing: border-box; z-index: 50;
+        }
+        .tap-btn {
+            width: 85px; height: 85px; background: rgba(255,255,255,0.08);
+            border: 3px solid rgba(255,255,255,0.2); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 35px; backdrop-filter: blur(5px);
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <canvas id="gameCanvas"></canvas>
+    <div id="banner-placeholder">AD_BANNER_PLACEHOLDER</div>
+
+    <div id="top-bar">
+        <div class="stat-row">
+            <div class="stat-box">💰 <span id="run-score">০</span></div>
+            <div class="stat-box">🏦 ব্যাংক: <span id="bank-val">০</span></div>
+        </div>
+    </div>
+
+    <div id="dist-ui"><span id="km-val">০.০০</span> <small style="font-size:14px">KM</small></div>
+
+    <!-- হোম স্ক্রিন -->
+    <div id="home-screen" class="overlay">
+        <h1 style="color: var(--primary); font-size: 45px; margin:0">ঘুষখোর রানার</h1>
+        <p style="color: #636e72; margin-bottom: 30px;">আর্ন মানি ও সুপারহিরো এডিশন</p>
+        <button class="btn" onclick="startPlay()">খেলা শুরু</button>
+        <button class="btn btn-sec" onclick="toggleHeroShop(true)">হিরো শপ</button>
+        <div style="font-size:12px; color:#444; margin-top:20px">VERSION 2.5 (STABLE)</div>
+    </div>
+
+    <!-- হিরো শপ -->
+    <div id="hero-shop" class="overlay" style="display: none;">
+        <h2 style="color: var(--primary);">হিরো শপ</h2>
+        <div id="shop-list"></div>
+        <button class="btn btn-earn" onclick="watchAdForMoney()">ফ্রি টাকা সংগ্রহ (অ্যাড)</button>
+        <button class="btn btn-sec" onclick="toggleHeroShop(false)">পিছনে যান</button>
+    </div>
+
+    <!-- গেম ওভার -->
+    <div id="game-over" class="overlay" style="display: none;">
+        <h2 style="color: var(--danger); font-size: 40px;">ধরা খেয়েছেন!</h2>
+        <p id="final-stats" style="font-size: 20px; margin: 20px 0;"></p>
+        <button class="btn" onclick="startPlay()">আবার খেলুন</button>
+        <button class="btn btn-sec" onclick="toHome()">মূল মেনু</button>
+    </div>
+
+    <!-- কন্ট্রোলার -->
+    <div id="controls">
+        <div class="tap-btn" id="lBtn">◀</div>
+        <div class="tap-btn" id="rBtn">▶</div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Data Management
+    let bank = parseInt(localStorage.getItem('br_v3_bank')) || 0;
+    let unlocked = JSON.parse(localStorage.getItem('br_v3_unlocked')) || [true, false, false, false];
+    let selectedHero = parseInt(localStorage.getItem('br_v3_hero')) || 0;
+
+    const heroes = [
+        { n: 'ডিফল্ট', p: 0, img: 'https://cdn-icons-png.flaticon.com/512/1995/1995574.png' },
+        { n: 'পুলিশ', p: 500, img: 'https://cdn-icons-png.flaticon.com/512/921/921071.png' },
+        { n: 'স্পাইডারম্যান', p: 2000, img: 'https://cdn-icons-png.flaticon.com/512/6295/6295842.png' },
+        { n: 'সুপারম্যান', p: 5000, img: 'https://cdn-icons-png.flaticon.com/512/732/732251.png' }
+    ];
+
+    const assets = { p: new Image(), m: new Image(), c: new Image(), b: new Image() };
+    assets.m.src = 'https://cdn-icons-png.flaticon.com/512/2489/2489756.png';
+    assets.c.src = 'https://cdn-icons-png.flaticon.com/512/921/921071.png';
+    assets.b.src = 'https://cdn-icons-png.flaticon.com/512/595/595067.png';
+
+    function updateHeroAsset() { assets.p.src = heroes[selectedHero].img; }
+    updateHeroAsset();
+
+    let active = false, score = 0, dist = 0, speed = 11, frame = 0, objects = [];
+    let player = { lane: 1, x: 0, y: 0, w: 90, h: 90, tx: 0 };
+
+    function resize() {
+        const h = document.getElementById('app-container');
+        canvas.width = h.clientWidth; canvas.height = h.clientHeight;
+        player.y = canvas.height - 240;
+        updatePos(true);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function updatePos(now = false) {
+        let lw = canvas.width / 3;
+        player.tx = (player.lane * lw) + (lw/2) - (player.w/2);
+        if(now) player.x = player.tx;
+    }
+
+    function move(d) {
+        if(!active) return;
+        if(d === 'L' && player.lane > 0) player.lane--;
+        if(d === 'R' && player.lane < 2) player.lane++;
+        updatePos();
+    }
+    document.getElementById('lBtn').onmousedown = (e) => { move('L'); e.preventDefault(); };
+    document.getElementById('rBtn').onmousedown = (e) => { move('R'); e.preventDefault(); };
+    document.getElementById('lBtn').ontouchstart = (e) => { move('L'); e.preventDefault(); };
+    document.getElementById('rBtn').ontouchstart = (e) => { move('R'); e.preventDefault(); };
+
+    function toggleHeroShop(show) {
+        document.getElementById('hero-shop').style.display = show ? 'flex' : 'none';
+        if(show) renderShopItems();
+        updateBankUI();
+    }
+
+    function renderShopItems() {
+        const list = document.getElementById('shop-list');
+        list.innerHTML = '';
+        heroes.forEach((h, i) => {
+            const card = document.createElement('div');
+            card.className = `shop-card ${selectedHero === i ? 'active' : ''}`;
+            card.innerHTML = `
+                <div style="display:flex;align-items:center;gap:15px">
+                    <img src="${h.img}" width="45">
+                    <div style="text-align:left">
+                        <b style="font-size:16px">${h.n}</b><br>
+                        <small style="color:#aaa">${unlocked[i] ? 'আনলকড' : h.p + ' টাকা'}</small>
+                    </div>
+                </div>
+                <button class="btn" style="width:auto;padding:8px 15px;font-size:12px;margin:0" onclick="purchase(${i})">
+                    ${selectedHero === i ? 'সিলেক্টেড' : (unlocked[i] ? 'ব্যবহার' : 'কিনুন')}
+                </button>
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    function purchase(i) {
+        if(unlocked[i]) {
+            selectedHero = i;
+            localStorage.setItem('br_v3_hero', i);
+            updateHeroAsset();
+            renderShopItems();
+        } else if(bank >= heroes[i].p) {
+            bank -= heroes[i].p;
+            unlocked[i] = true;
+            localStorage.setItem('br_v3_bank', bank);
+            localStorage.setItem('br_v3_unlocked', JSON.stringify(unlocked));
+            purchase(i);
+        } else { alert("পর্যাপ্ত টাকা নেই! গেম খেলে ইনকাম করুন।"); }
+    }
+
+    function watchAdForMoney() {
+        const ok = confirm("একটি প্রোমো ভিডিও দেখলে ৫০০ টাকা বোনাস পাবেন। দেখবেন?");
+        if(ok) {
+            alert("অ্যাড সফল! ৫০০ টাকা ব্যাংকে যোগ হয়েছে।");
+            bank += 500;
+            localStorage.setItem('br_v3_bank', bank);
+            updateBankUI();
+            renderShopItems();
+        }
+    }
+
+    function spawn() {
+        let lane = Math.floor(Math.random()*3);
+        let coin = Math.random() > 0.45; // ভেরি হার্ড
+        let s = 70;
+        objects.push({
+            x: (lane*(canvas.width/3))+(canvas.width/6)-(s/2),
+            y: -100, w: s, h: s, type: coin ? 'm' : 'o',
+            sub: coin ? 'm' : (Math.random()>0.5 ? 'c' : 'b')
+        });
+    }
+
+    function loop() {
+        if(!active) return;
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        frame++; dist += speed/600;
+        document.getElementById('km-val').innerText = dist.toFixed(2);
+
+        // Road
+        ctx.fillStyle = '#050a14'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.setLineDash([50, 50]); ctx.lineDashOffset = -(frame*speed)%100;
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 6;
+        for(let i=1; i<3; i++){
+            ctx.beginPath(); ctx.moveTo(canvas.width/3*i, 0); ctx.lineTo(canvas.width/3*i, canvas.height); ctx.stroke();
+        }
+
+        // Player
+        player.x += (player.tx - player.x) * 0.28;
+        ctx.drawImage(assets.p, player.x, player.y, player.w, player.h);
+
+        // Objects
+        for(let i=objects.length-1; i>=0; i--){
+            let o = objects[i]; o.y += speed;
+            ctx.drawImage(assets[o.sub], o.x, o.y, o.w, o.h);
+
+            if(player.x+15 < o.x+o.w && player.x+player.w-15 > o.x && player.y+15 < o.y+o.h && player.y+player.h-15 > o.y){
+                if(o.type==='m'){ score+=10; document.getElementById('run-score').innerText=score; objects.splice(i,1); }
+                else { gameOver(); }
+            }
+            if(o.y > canvas.height) objects.splice(i,1);
+        }
+
+        if(frame%45 === 0) spawn();
+        if(frame%800 === 0) speed += 0.8;
+        requestAnimationFrame(loop);
+    }
+
+    function startPlay() {
+        document.querySelectorAll('.overlay').forEach(e => e.style.display='none');
+        score=0; dist=0; speed=11.5; objects=[]; player.lane=1; updatePos(true);
+        document.getElementById('run-score').innerText='০'; active=true; loop();
+    }
+
+    function gameOver() {
+        active = false;
+        bank += score;
+        localStorage.setItem('br_v3_bank', bank);
+        updateBankUI();
+        document.getElementById('game-over').style.display='flex';
+        document.getElementById('final-stats').innerHTML = `অর্জিত টাকা: ${score} | অতিক্রান্ত: ${dist.toFixed(2)} কি.মি.`;
+    }
+
+    function toHome() {
+        document.getElementById('game-over').style.display='none';
+        document.getElementById('home-screen').style.display='flex';
+    }
+
+    function updateBankUI() {
+        document.getElementById('bank-val').innerText = bank.toLocaleString('bn-BD');
+    }
+    updateBankUI();
+</script>
+</body>
+</html>
+
+```
